@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quizzy — Le défi culture &amp; code</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-theme="sombre">
+
+  <!-- ============================================================
+       BARRE DU HAUT — visible sur tous les écrans
+       ============================================================ -->
+  <header class="barre">
+    <div class="barre__marque">
+      <span class="logo">Q</span>
+      <span class="logo-texte">Quizzy</span>
+    </div>
+
+    <nav class="barre__nav">
+      <button class="lien-nav est-actif" data-aller="accueil">Accueil</button>
+      <button class="lien-nav" data-aller="classement">Classement</button>
+      <button class="lien-nav" data-aller="historique">Historique</button>
+      <button class="lien-nav" data-aller="editeur">Mes questions</button>
+      <button class="lien-nav" data-aller="parametres">Réglages</button>
+    </nav>
+
+    <div class="barre__joueur" id="badge-joueur" hidden>
+      <span class="badge-avatar" id="joueur-initiale">?</span>
+      <span id="joueur-nom">Invité</span>
+    </div>
+  </header>
+
+  <main class="scene">
+
+    <!-- ============================================================
+         ÉCRAN 1 — ACCUEIL   (Tresor)
+         ============================================================ -->
+    <section class="ecran est-visible" id="ecran-accueil">
+      <div class="carte carte--large">
+        <p class="eyebrow">Codecamp PrimeTek — Travail pratique JavaScript</p>
+        <h1 class="titre-geant">Dix questions.<br>Vingt secondes chacune.</h1>
+        <p class="sous-titre">Choisis ta catégorie, entre ton pseudo, et va chercher la première place du classement.</p>
+
+        <form class="formulaire" id="form-accueil" autocomplete="off">
+          <label class="champ">
+            <span class="champ__label">Ton pseudo</span>
+            <input type="text" id="champ-pseudo" placeholder="ex. Tresor_V" maxlength="16" required>
+          </label>
+
+          <div class="grille-2">
+            <label class="champ">
+              <span class="champ__label">Catégorie</span>
+              <select id="champ-categorie">
+                <option value="toutes">Toutes les catégories</option>
+                <!-- Les autres options sont générées en JS par Fabrice -->
+              </select>
+            </label>
+
+            <label class="champ">
+              <span class="champ__label">Difficulté</span>
+              <select id="champ-difficulte">
+                <option value="toutes">Toutes</option>
+                <option value="facile">Facile</option>
+                <option value="moyen">Moyen</option>
+                <option value="difficile">Difficile</option>
+              </select>
+            </label>
+          </div>
+
+          <p class="message-erreur" id="erreur-accueil" hidden></p>
+
+          <div class="rangee-actions">
+            <button type="submit" class="bouton bouton--principal" id="btn-commencer">Commencer la partie</button>
+            <button type="button" class="bouton bouton--fantome" id="btn-reprendre" hidden>Reprendre la partie en cours</button>
+          </div>
+        </form>
+
+        <ul class="puces-info">
+          <li><strong id="info-nb-questions">0</strong> questions disponibles</li>
+          <li><strong id="info-nb-parties">0</strong> parties jouées sur cet appareil</li>
+          <li><strong id="info-meilleur">—</strong> meilleur score</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         ÉCRAN 2 — QUIZ   (N'famory, Jephte, Theophile, Julien)
+         ============================================================ -->
+    <section class="ecran" id="ecran-quiz">
+      <div class="carte carte--quiz">
+
+        <div class="quiz-entete">
+          <div class="compteur">
+            Question <strong id="quiz-index">1</strong> / <span id="quiz-total">10</span>
+          </div>
+
+          <!-- Chronomètre : l'anneau se vide via la variable CSS --avancement -->
+          <div class="chrono" id="chrono" style="--avancement: 1">
+            <svg viewBox="0 0 60 60" aria-hidden="true">
+              <circle class="chrono__piste" cx="30" cy="30" r="26"></circle>
+              <circle class="chrono__jauge" cx="30" cy="30" r="26"></circle>
+            </svg>
+            <span class="chrono__valeur" id="chrono-valeur">20</span>
+          </div>
+        </div>
+
+        <div class="progression">
+          <div class="progression__barre" id="barre-progression" style="width: 0%"></div>
+        </div>
+
+        <div class="quiz-corps">
+          <p class="etiquettes">
+            <span class="etiquette" id="quiz-categorie">Catégorie</span>
+            <span class="etiquette etiquette--creuse" id="quiz-difficulte">Difficulté</span>
+          </p>
+
+          <h2 class="question" id="quiz-question">La question s'affiche ici.</h2>
+
+          <!-- Les boutons de réponse sont générés en JS par N'famory -->
+          <div class="options" id="quiz-options"></div>
+
+          <p class="retour" id="quiz-retour" hidden></p>
+        </div>
+
+        <div class="quiz-pied">
+          <span class="score-live">Score : <strong id="quiz-score">0</strong></span>
+          <button class="bouton bouton--principal" id="btn-suivant" disabled>Question suivante</button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================================
+         ÉCRAN 3 — RÉSULTAT   (Sammy)
+         ============================================================ -->
+    <section class="ecran" id="ecran-resultat">
+      <div class="carte carte--centre">
+        <p class="eyebrow">Partie terminée</p>
+        <p class="score-geant"><span id="resultat-score">0</span><span class="score-geant__total">/<span id="resultat-total">10</span></span></p>
+        <h2 class="titre-moyen" id="resultat-titre">Résultat</h2>
+        <p class="sous-titre" id="resultat-message">Message personnalisé selon le score.</p>
+
+        <ul class="stats-rangee">
+          <li><span id="resultat-pourcentage">0%</span><small>réussite</small></li>
+          <li><span id="resultat-duree">0s</span><small>durée</small></li>
+          <li><span id="resultat-serie">0</span><small>meilleure série</small></li>
+        </ul>
+
+        <!-- Détail question par question, généré en JS par Sammy -->
+        <ol class="recap" id="resultat-recap"></ol>
+
+        <div class="rangee-actions rangee-actions--centre">
+          <button class="bouton bouton--principal" id="btn-rejouer">Rejouer</button>
+          <button class="bouton bouton--fantome" data-aller="classement">Voir le classement</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         ÉCRAN 4 — CLASSEMENT   (Elisée)
+         ============================================================ -->
+    <section class="ecran" id="ecran-classement">
+      <div class="carte carte--large">
+        <p class="eyebrow">Top 10 de cet appareil</p>
+        <h2 class="titre-moyen">Classement</h2>
+
+        <table class="tableau">
+          <thead>
+            <tr><th>#</th><th>Joueur</th><th>Score</th><th>Catégorie</th><th>Date</th></tr>
+          </thead>
+          <!-- Lignes générées en JS par Elisée -->
+          <tbody id="classement-corps"></tbody>
+        </table>
+
+        <p class="vide" id="classement-vide">Aucun score enregistré pour l'instant. Joue une partie pour ouvrir le classement.</p>
+
+        <div class="rangee-actions">
+          <button class="bouton bouton--danger" id="btn-vider-classement">Effacer le classement</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         ÉCRAN 5 — HISTORIQUE & STATISTIQUES   (Williams)
+         ============================================================ -->
+    <section class="ecran" id="ecran-historique">
+      <div class="carte carte--large">
+        <p class="eyebrow">Toutes tes parties</p>
+        <h2 class="titre-moyen">Historique &amp; statistiques</h2>
+
+        <ul class="stats-rangee">
+          <li><span id="stat-parties">0</span><small>parties</small></li>
+          <li><span id="stat-moyenne">0%</span><small>moyenne</small></li>
+          <li><span id="stat-record">0</span><small>record</small></li>
+          <li><span id="stat-categorie">—</span><small>catégorie préférée</small></li>
+        </ul>
+
+        <!-- Barres générées en JS par Williams -->
+        <div class="graphe" id="graphe-historique"></div>
+
+        <ul class="liste-historique" id="liste-historique"></ul>
+        <p class="vide" id="historique-vide">Rien à afficher pour le moment.</p>
+
+        <div class="rangee-actions">
+          <button class="bouton bouton--danger" id="btn-vider-historique">Effacer l'historique</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         ÉCRAN 6 — ÉDITEUR DE QUESTIONS   (Gaël)
+         ============================================================ -->
+    <section class="ecran" id="ecran-editeur">
+      <div class="carte carte--large">
+        <p class="eyebrow">Ajoute tes propres questions au jeu</p>
+        <h2 class="titre-moyen">Mes questions</h2>
+
+        <form class="formulaire" id="form-question" autocomplete="off">
+          <label class="champ">
+            <span class="champ__label">Question</span>
+            <input type="text" id="q-intitule" placeholder="Quelle méthode ajoute un élément à la fin d'un tableau ?" required>
+          </label>
+
+          <div class="grille-2">
+            <label class="champ">
+              <span class="champ__label">Catégorie</span>
+              <input type="text" id="q-categorie" placeholder="JavaScript" required>
+            </label>
+            <label class="champ">
+              <span class="champ__label">Difficulté</span>
+              <select id="q-difficulte">
+                <option value="facile">Facile</option>
+                <option value="moyen">Moyen</option>
+                <option value="difficile">Difficile</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grille-2">
+            <label class="champ"><span class="champ__label">Réponse A</span><input type="text" id="q-opt-0" required></label>
+            <label class="champ"><span class="champ__label">Réponse B</span><input type="text" id="q-opt-1" required></label>
+            <label class="champ"><span class="champ__label">Réponse C</span><input type="text" id="q-opt-2"></label>
+            <label class="champ"><span class="champ__label">Réponse D</span><input type="text" id="q-opt-3"></label>
+          </div>
+
+          <label class="champ">
+            <span class="champ__label">Bonne réponse</span>
+            <select id="q-bonne">
+              <option value="0">A</option><option value="1">B</option>
+              <option value="2">C</option><option value="3">D</option>
+            </select>
+          </label>
+
+          <p class="message-erreur" id="erreur-question" hidden></p>
+
+          <div class="rangee-actions">
+            <button type="submit" class="bouton bouton--principal">Enregistrer la question</button>
+            <button type="button" class="bouton bouton--fantome" id="btn-exporter">Exporter en JSON</button>
+            <label class="bouton bouton--fantome">
+              Importer un JSON
+              <input type="file" id="champ-import" accept="application/json" hidden>
+            </label>
+          </div>
+        </form>
+
+        <!-- Liste générée en JS par Gaël -->
+        <ul class="liste-questions" id="liste-questions"></ul>
+        <p class="vide" id="editeur-vide">Tu n'as encore créé aucune question.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         ÉCRAN 7 — RÉGLAGES   (Resia)
+         ============================================================ -->
+    <section class="ecran" id="ecran-parametres">
+      <div class="carte carte--large">
+        <p class="eyebrow">Ces réglages sont conservés sur cet appareil</p>
+        <h2 class="titre-moyen">Réglages</h2>
+
+        <div class="reglage">
+          <div><strong>Thème clair</strong><small>Bascule entre le thème sombre et le thème clair.</small></div>
+          <label class="interrupteur"><input type="checkbox" id="reg-theme"><span></span></label>
+        </div>
+
+        <div class="reglage">
+          <div><strong>Nombre de questions</strong><small>Entre 5 et 20 questions par partie.</small></div>
+          <input type="range" id="reg-nb-questions" min="5" max="20" step="1" value="10">
+          <output id="reg-nb-questions-valeur">10</output>
+        </div>
+
+        <div class="reglage">
+          <div><strong>Temps par question</strong><small>De 10 à 60 secondes.</small></div>
+          <input type="range" id="reg-duree" min="10" max="60" step="5" value="20">
+          <output id="reg-duree-valeur">20 s</output>
+        </div>
+
+        <div class="reglage">
+          <div><strong>Mélanger les réponses</strong><small>L'ordre des propositions change à chaque partie.</small></div>
+          <label class="interrupteur"><input type="checkbox" id="reg-melange" checked><span></span></label>
+        </div>
+
+        <div class="rangee-actions">
+          <button class="bouton bouton--fantome" id="btn-reinitialiser-reglages">Rétablir les valeurs par défaut</button>
+          <button class="bouton bouton--danger" id="btn-tout-effacer">Effacer toutes mes données</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Zone de notifications : App.notifier('message') y affiche une bulle -->
+  <div class="notifications" id="notifications"></div>
+
+  <!-- ============================================================
+       SCRIPTS — l'ordre compte. Un fichier = un étudiant = une PR.
+       ============================================================ -->
+  <script src="js/core.js"></script>
+  <script src="js/data.js"></script>
+
+  <script src="js/01-shammah-navigation.js"></script>
+  <script src="js/02-gael-reglages.js"></script>
+  <script src="js/03-nfamory-banque.js"></script>
+  <script src="js/04-tresor-accueil.js"></script>
+  <script src="js/05-fabrice-affichage.js"></script>
+  <script src="js/06-jephte-validation.js"></script>
+  <script src="js/07-theophile-chrono.js"></script>
+  <script src="js/08-williams-progression.js"></script>
+  <script src="js/09-julien-resultat.js"></script>
+  <script src="js/10-sammy-classement.js"></script>
+  <script src="js/11-resia-historique.js"></script>
+  <script src="js/12-elisee-editeur.js"></script>
+
+  <script src="js/demarrage.js"></script>
+</body>
+</html>
