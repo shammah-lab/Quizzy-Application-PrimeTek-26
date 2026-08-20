@@ -46,8 +46,11 @@ App.banque = [];
 
 const construireBanque = () => {
   // TODO 1 : const perso = App.local.lire(App.CLES.perso, []);
+  const perso = App.local.lire(App.CLES.perso,[]);
   // TODO 2 : App.banque = [...App.QUESTIONS, ...perso];
+  App.banque = [...App.QUESTIONS, ...perso];
   // TODO 3 : mettre à jour #info-nb-questions
+  $('#info-nb-questions').textContent = App.banque.length;
 };
 
 const remplirCategories = () => {
