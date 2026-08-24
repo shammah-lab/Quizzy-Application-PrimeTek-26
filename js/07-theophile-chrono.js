@@ -31,12 +31,16 @@
    ============================================================= */
 
 let minuteur = null;
-
+const chrono = $('#chrono')
+const chronojauge = $('.chrono__jauge')
+const chronoVal = $('#chrono-valeur')
+let tempsTotal = App.config.dureeQuestion
 const arreterChrono = () => {
   // TODO 1 : clearInterval(minuteur); minuteur = null;
+  clearInterval(minuteur)
 };
 
-const demarrerChrono = () => {
+const demarrerChrono = (tempsTotal) => {
   // TODO 2 : arreterChrono() d'abord
   // TODO 3 : let restant = App.config.dureeQuestion;
   // TODO 4 : afficher la valeur de départ, remettre --avancement à 1,
@@ -44,6 +48,25 @@ const demarrerChrono = () => {
   // TODO 5 : minuteur = setInterval(() => { ... }, 1000);
   //          chaque tick : restant -= 1, affichage, .est-urgent si <= 5,
   //          et si restant <= 0 -> arreterChrono() + App.emettre('temps:ecoule')
+   arreterChrono()
+   let restant = tempsTotal;
+   chronoVal.textContent = restant
+   chronojauge.style.setProperty('--avancement', 1)
+   chronojauge.style.stroke = 'var(--menthe)'
+   minuteur = setInterval(() => {
+      restant--;
+      chronoVal.textContent = restant
+      chronojauge.style.setProperty('--avancement', restant / tempsTotal)
+      if(restant <= 0){
+         chronojauge.style.setProperty('--avancement', 0)
+         arreterChrono()
+         App.emettre('temps:ecoule');
+      }
+      else if (restant <= 5){
+         chronojauge.style.stroke = 'var(--rouge)'
+      }
+   }, 1000)
+
 };
 
 App.sur('question:affichee', demarrerChrono);
