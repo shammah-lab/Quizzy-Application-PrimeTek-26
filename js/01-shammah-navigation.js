@@ -39,3 +39,57 @@ App.sur('app:pret', () => {
   //          (par défaut 'accueil'). Ne jamais restaurer 'quiz' directement :
   //          c'est Tresor qui gère la reprise de partie.
 });
+
+console.log('Navigation de Shammah chargée');
+console.log('app:pret reçu par Shammah');
+
+App.allerA = (nom) => {
+  // Cacher tous les écrans
+  $$('.ecran').forEach((ecran) => {
+    ecran.classList.remove('est-visible');
+  });
+
+  // Afficher l'écran demandé
+  const ecran = $(`#ecran-${nom}`);
+
+  if (ecran) {
+    ecran.classList.add('est-visible');
+  }
+
+  // Mettre à jour l'onglet actif
+  $$('.lien-nav').forEach((lien) => {
+    lien.classList.remove('est-actif');
+
+    if (lien.dataset.aller === nom) {
+      lien.classList.add('est-actif');
+    }
+  });
+
+  // Sauvegarder l'écran courant dans sessionStorage
+  App.session.ecrire('quizzy:ecran', nom);
+
+  // Informer les autres modules que l'écran a changé
+  App.emettre('ecran:change', { nom });
+};
+
+App.sur('app:pret', () => {
+  // Faire fonctionner tous les éléments avec data-aller
+  $$('[data-aller]').forEach((bouton) => {
+    bouton.addEventListener('click', () => {
+      App.allerA(bouton.dataset.aller);
+    });
+  });
+
+  // Restaurer le dernier écran visité
+  const dernierEcran = App.session.lire(
+    'quizzy:ecran',
+    'accueil'
+  );
+
+  // Ne jamais restaurer directement le quiz
+  if (dernierEcran === 'quiz') {
+    App.allerA('accueil');
+  } else {
+    App.allerA(dernierEcran);
+  }
+});
