@@ -78,8 +78,17 @@ const editeurVide = $('#editeur-vide');
 // =============================================================
 
 
+const lireQuestionsPerso = () =>
+  App.local.lire(
+    App.CLES.perso,
+    []
+  );
 
-const lireQuestionsPerso = () => App.local.lire(App.CLES.perso, []);
+const sauvegarderQuestionsPerso = (questions) =>
+  App.local.ecrire(
+    App.CLES.perso,
+    questions
+  );
 
 // =============================================================
 // 3. PROTECTION DU TEXTE AFFICHE
@@ -224,8 +233,65 @@ const recupererDonneesFormulaire = () => {
 };
 
 // =============================================================
-// 6. AFFICHAGE DES QUESTIONS PERSONNELLES
+// 6. CREATION D'UNE QUESTION QUIZZY
 // =============================================================
+
+// {
+//   id,
+//   categorie,
+//   difficulte,
+//   intitule,
+//   options,
+//   bonne,
+//   explication
+// }
+
+// Nous devons donc effectuer cette transformation :
+
+// données du formulaire
+//         ↓
+// construction
+//         ↓
+// objet Quizzy
+//         ↓
+// localStorage
+
+
+const creerQuestion = ({
+  intitule,
+  categorie,
+  difficulte,
+  bonneChoisie,
+  propositionsRemplies
+}) => {
+
+  const options = propositionsRemplies.map(
+    ({ texte }) => texte
+  );
+
+  const bonne = propositionsRemplies.findIndex(
+    ({ index }) => index === bonneChoisie
+  );
+
+  const id = `perso-${Date.now()}`;
+
+  return {
+    id,
+    categorie,
+    difficulte,
+    intitule,
+    options,
+    bonne,
+    explication: ''
+  };
+
+};
+
+// =============================================================
+// 7. AFFICHAGE DES QUESTIONS PERSONNELLES
+// =============================================================
+
+
 
 const afficherQuestionsPerso = () => {
 
@@ -286,26 +352,90 @@ App.sur('app:pret', () => {
 
   formulaireQuestion.noValidate = true;
 
+    // Solution partielle
+
+    afficherQuestionsPerso();
+
    formulaireQuestion.addEventListener(
     'submit',
     (evenement) => {
 
       evenement.preventDefault();
 
+      // le console.log() temporaire.
+
+
+      // const donnees =
+      //   recupererDonneesFormulaire();
+
+      // if (!donnees) {
+      //   return;
+      // }
+
+      // console.log(
+      //   'Données valides :',
+      //   donnees
+      // );
+
+      
       const donnees =
         recupererDonneesFormulaire();
+
 
       if (!donnees) {
         return;
       }
 
-      console.log(
-        'Données valides :',
-        donnees
+
+      const nouvelleQuestion =
+        creerQuestion(donnees);
+
+
+      const questionsExistantes =
+        lireQuestionsPerso();
+
+
+      const questionsMisesAJour = [
+        ...questionsExistantes,
+        nouvelleQuestion
+      ];
+
+
+      const sauvegardeReussie =
+        sauvegarderQuestionsPerso(
+          questionsMisesAJour
+        );
+
+
+      if (!sauvegardeReussie) {
+
+        App.notifier(
+          'Impossible d’enregistrer la question.',
+          'erreur'
+        );
+
+        return;
+      }
+
+
+      afficherQuestionsPerso();
+
+      formulaireQuestion.reset();
+
+      cacherErreur();
+
+      App.emettre(
+        'banque:modifiee'
+      );
+
+      App.notifier(
+        'Question enregistrée avec succès.'
       );
 
     }
   );
+
+
 
 
 });
