@@ -46,6 +46,34 @@
      question mal formée casse la partie de tout le monde.
    ============================================================= */
 
+
+
+// =============================================================
+// 1. ELEMENTS DU DOM
+// =============================================================
+
+const formulaireQuestion = $('#form-question');
+
+const champIntitule = $('#q-intitule');
+const champCategorie = $('#q-categorie');
+const champDifficulte = $('#q-difficulte');
+
+const champOption0 = $('#q-opt-0');
+const champOption1 = $('#q-opt-1');
+const champOption2 = $('#q-opt-2');
+const champOption3 = $('#q-opt-3');
+
+const champBonneReponse = $('#q-bonne');
+
+const messageErreur = $('#erreur-question');
+
+const boutonExporter = $('#btn-exporter');
+const champImport = $('#champ-import');
+
+const listeQuestions = $('#liste-questions');
+const editeurVide = $('#editeur-vide');
+
+
 const lireQuestionsPerso = () => App.local.lire(App.CLES.perso, []);
 
 const afficherQuestionsPerso = () => {
