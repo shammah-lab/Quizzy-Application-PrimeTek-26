@@ -56,6 +56,15 @@ const construireBanque = () => {
 const remplirCategories = () => {
   // TODO 4 : catégories uniques + triées, générées avec .map() + .join('')
   //          en gardant <option value="toutes">Toutes les catégories</option>
+  const categoriesBrutes = App.banque.map((q) => q.categorie)
+  const categories = [...new Set(categoriesBrutes)].sort()
+
+  const options = categories.map((c) => `<option value="${c}">${c}</option>`).join('')
+  const select = $('#champ-categorie');
+
+  const contenu = `<option value="toutes">Toutes les catégories</option>` + options
+
+  select.innerHTML = contenu
 };
 
 const preparerPropositions = (question) => {
