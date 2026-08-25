@@ -356,6 +356,10 @@ App.sur('app:pret', () => {
 
     afficherQuestionsPerso();
 
+  // ---------------------------------
+  // AJOUT D'UNE QUESTION
+  // 
+
    formulaireQuestion.addEventListener(
     'submit',
     (evenement) => {
@@ -430,6 +434,82 @@ App.sur('app:pret', () => {
 
       App.notifier(
         'Question enregistrée avec succès.'
+      );
+
+    }
+  );
+
+  // ---------------------------------
+  // SUPPRESSION D'UNE QUESTION
+  // --
+
+
+  listeQuestions.addEventListener(
+    'click',
+    (evenement) => {
+
+      const boutonSupprimer =
+        evenement.target.closest('.supprimer');
+
+
+      if (
+        !boutonSupprimer ||
+        !listeQuestions.contains(boutonSupprimer)
+      ) {
+        return;
+      }
+
+
+      const { id } =
+        boutonSupprimer.dataset;
+
+
+      const questions =
+        lireQuestionsPerso();
+
+
+      const questionsRestantes =
+        questions.filter(
+          ({ id: questionId }) =>
+            questionId !== id
+        );
+
+
+      if (
+        questionsRestantes.length ===
+        questions.length
+      ) {
+        return;
+      }
+
+
+      const sauvegardeReussie =
+        sauvegarderQuestionsPerso(
+          questionsRestantes
+        );
+
+
+      if (!sauvegardeReussie) {
+
+        App.notifier(
+          'Impossible de supprimer la question.',
+          'erreur'
+        );
+
+        return;
+      }
+
+
+      afficherQuestionsPerso();
+
+
+      App.emettre(
+        'banque:modifiee'
+      );
+
+
+      App.notifier(
+        'Question supprimée.'
       );
 
     }
