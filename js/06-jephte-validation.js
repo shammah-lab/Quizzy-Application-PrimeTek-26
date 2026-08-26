@@ -44,23 +44,77 @@
 
 let dejaValidee = false;
 
-const validerReponse = ({ indexChoisi = null } = {}) => {
+const validerReponse = (donnees = {}) => {
   if (dejaValidee) return;
-  dejaValidee = true;
 
-  // TODO 1 : const question = App.etat.questions[App.etat.index];
-  // TODO 2 : const correcte = indexChoisi === question.bonne;
-  // TODO 3 : colorer et désactiver les boutons
-  // TODO 4 : afficher l'explication dans #quiz-retour
-  // TODO 5 : score, serie, serieMax
-  // TODO 6 : App.etat.reponses.push({ ... })
-  // TODO 7 : activer #btn-suivant
-  // TODO 8 : App.emettre('reponse:validee', { question, indexChoisi, correcte })
+  // Sécurisation : extraction de l'index selon le format transmis par l'événement
+  const indexChoisi = typeof donnees === 'object' && donnees !== null 
+    ? donnees.indexChoisi ?? null 
+    : donnees;
+
+  const question = App.etat.questions[App.etat.index];
+  if (!question) return;
+
+  dejaValidee = true;
+  const correcte = indexChoisi === question.bonne;
+
+  // 1. Gestion des éléments DOM
+  const boutonBonneReponse = $(`.option[data-index="${question.bonne}"]`);
+  const boutonChoisi = indexChoisi !== null 
+    ? $(`.option[data-index="${indexChoisi}"]`) 
+    : null;
+
+  if (boutonBonneReponse) boutonBonneReponse.classList.add('est-juste');
+  if (boutonChoisi && !correcte) boutonChoisi.classList.add('est-fausse');
+  
+  $$('.option').forEach((bouton) => { 
+    bouton.disabled = true; 
+  });
+
+  // 2. Feedback utilisateur
+  const retour = $('#quiz-retour');
+  retour.className = `retour ${correcte ? 'est-juste' : 'est-fausse'}`;
+  retour.innerHTML = `<strong>${correcte ? 'Bonne réponse !' : 'Dommage !'}</strong> ${question.explication}`;
+  retour.hidden = false;
+
+  // 3. Mise à jour de App.etat (Score & Séries)
+  if (correcte) {
+    App.etat.score += 1;
+    App.etat.serie += 1;
+    App.etat.serieMax = Math.max(App.etat.serieMax, App.etat.serie);
+  } else {
+    App.etat.serie = 0;
+  }
+  
+  const quizScore = $('#quiz-score');
+  if (quizScore) quizScore.textContent = App.etat.score;
+
+  // 4. Enregistrement pour le récapitulatif
+  App.etat.reponses.push({
+    id: question.id,
+    intitule: question.intitule,
+    indexChoisi,
+    correcte,
+    bonneReponse: question.options[question.bonne]
+  });
+
+  // 5. Activation du bouton suivant & Émission
+  const btnSuivant = $('#btn-suivant');
+  if (btnSuivant) btnSuivant.disabled = false;
+
+  App.emettre('reponse:validee', { question, indexChoisi, correcte });
 };
 
-App.sur('reponse:choisie', validerReponse);
+// Écouteurs d'événements
+App.sur('reponse:choisie', (data) => validerReponse(data));
 App.sur('temps:ecoule', () => validerReponse({ indexChoisi: null }));
 App.sur('question:affichee', () => { dejaValidee = false; });
 App.sur('partie:demarree', () => {
-  // TODO 9 : remettre score, serie et serieMax à zéro et rafraîchir #quiz-score
+  App.etat.score = 0;
+  App.etat.serie = 0;
+  App.etat.serieMax = 0;
+  App.etat.reponses = [];
+  const quizScore = $('#quiz-score');
+  if (quizScore) quizScore.textContent = App.etat.score;
 });
+
