@@ -65,20 +65,57 @@ const remplirCategories = () => {
   const contenu = `<option value="toutes">Toutes les catégories</option>` + options
 
   select.innerHTML = contenu
+
+  select.addEventListener('change', () => {
+  const categorie = select.value;
+
+  const questionsDisponibles = App.banque.filter((q) => {
+    return categorie === 'toutes' || q.categorie === categorie;
+  });
+
+    $('#info-nb-questions').textContent = questionsDisponibles.length;
+  });
 };
 
 const preparerPropositions = (question) => {
   // TODO 5 : renvoyer { ...question, propositions } comme expliqué ci-dessus
-  return question;
+  let propositions = question.options
+  .map((texte, indexOrigine) => ({
+    texte,
+    indexOrigine
+  }));
+  if(App.config.melangerReponses){
+    propositions = App.melanger(propositions)
+  }
+  
+  return { ...question, propositions };
 };
 
 App.tirerQuestions = ({ categorie = 'toutes', difficulte = 'toutes' } = {}) => {
   // TODO 6 : filtrer App.banque ('toutes' = pas de filtre)
+  const correspondantes = App.banque.filter((q) => {
+    const categorieOK = categorie === "toutes" || q.categorie === categorie;
+    const difficulteOK = difficulte === "toutes" || q.difficulte === difficulte;
+    
+   return categorieOK && difficulteOK;
+  });
+  
   // TODO 7 : mélanger (App.melanger) puis .slice(0, App.config.nbQuestions)
   // TODO 8 : passer chaque question dans preparerPropositions()
   // TODO 9 : si le résultat est vide -> App.notifier('...', 'erreur') et
   //          renvoyer un tableau vide (Tresor ne doit pas lancer la partie)
-  return [];
+  if (correspondantes.length === 0) {
+    App.notifier('Aucune question ne correspond à ce filtre', 'erreur');
+    return [];
+  }
+
+  const tirees = App.melanger(correspondantes)
+    .slice(0, App.config.nbQuestions)
+    .map((q) => {
+      return preparerPropositions(q);
+  });
+
+return tirees;
 };
 
 App.sur('app:chargement', construireBanque);
