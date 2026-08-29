@@ -28,10 +28,62 @@ const lireClassement = () => App.local.lire(App.CLES.classement, []);
 
 const enregistrerScore = (partie) => {
   // TODO 1 et 2
+   // Lire le classement existant
+  const classement = lireClassement();
+
+  // Ajouter le nouveau score
+  classement.push({
+    joueur: partie.joueur,
+    score: partie.score,
+    total: partie.total,
+    categorie: partie.categorie,
+    duree: partie.duree,
+    date: new Date().toISOString()
+  });
+
+  // Trier : meilleur score en premier
+  // En cas d'égalité : le plus rapide en premier
+  classement.sort(
+    (a, b) => b.score - a.score || a.duree - b.duree
+  );
+
+  // Garder seulement les 10 meilleurs
+  const top10 = classement.slice(0, 10);
+
+  // Sauvegarder le classement
+  App.local.ecrire(App.CLES.classement, top10)
 };
 
 const afficherClassement = () => {
   // TODO 3, 4 et 6
+  const classement = lireClassement();
+
+  // Générer les lignes du tableau
+  const lignes = classement.map((entree, index) => `
+    <tr>
+      <td>${index + 1}</td>
+      <td>${entree.joueur}</td>
+      <td>${entree.score}/${entree.total}</td>
+      <td>${entree.categorie}</td>
+      <td>${App.formaterDate(entree.date)}</td>
+    </tr>
+  `).join('');
+
+  // Afficher les lignes
+  $('#classement-corps').innerHTML = lignes;
+
+  // Afficher ou masquer le message "vide"
+  $('#classement-vide').hidden = classement.length > 0;
+
+  // Mettre à jour le meilleur score
+  if (classement.length > 0) {
+    const meilleur = classement[0];
+
+    $('#info-meilleur').textContent =
+      `${meilleur.score}/${meilleur.total}`;
+  } else {
+    $('#info-meilleur').textContent = '—';
+  }
 };
 
 App.sur('partie:terminee', enregistrerScore);
