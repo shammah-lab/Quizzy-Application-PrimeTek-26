@@ -33,6 +33,8 @@ const sauvegarderSession = () => {
   }
 };
 
+/** Ma contribution **/
+
 /**
  * Met à jour l'affichage du badge du joueur en haut à droite
  */
