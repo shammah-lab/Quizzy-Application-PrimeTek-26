@@ -14,42 +14,36 @@
       - la bonne réponse choisie doit pointer sur une proposition réellement
         remplie (choisir « C » alors que le champ C est vide = erreur)
       Messages d'erreur clairs dans #erreur-question, jamais un alert().
+
    2. Enregistrer dans localStorage (clé App.CLES.perso) au format EXACT de
-      data.js : { id, categorie, difficulte, intitule, options, bonne, explication }
+      data.js :
+      { id, categorie, difficulte, intitule, options, bonne, explication }
       avec un id unique : `perso-${Date.now()}`.
+
    3. Afficher la liste des questions perso dans #liste-questions avec un
       bouton Supprimer (class="supprimer") par ligne, généré avec .map() +
       .join(). Gérer #editeur-vide.
-   4. Après CHAQUE ajout ou suppression : App.emettre('banque:modifiee')
+
+   4. Après CHAQUE ajout ou suppression :
+      App.emettre('banque:modifiee')
       pour que N'famory recalcule la banque et les catégories.
-   5. Export — #btn-exporter télécharge un .json des questions perso :
-        const blob = new Blob([JSON.stringify(questions, null, 2)],
-                              { type: 'application/json' });
-        const lien = document.createElement('a');
-        lien.href = URL.createObjectURL(blob);
-        lien.download = `quizzy-questions-${Date.now()}.json`;
-        lien.click();
-        URL.revokeObjectURL(lien.href);
-   6. Import — #champ-import lit un fichier avec FileReader :
-        const lecteur = new FileReader();
-        lecteur.onload = () => { ... JSON.parse(lecteur.result) ... };
-        lecteur.readAsText(fichier);
-      Valide la structure (tableau ? chaque entrée a bien intitule, options,
-      bonne ?), refuse un fichier invalide avec un message clair, et FUSIONNE
-      sans écraser les questions déjà présentes. Attention aux doublons d'id.
+
+   5. Export — #btn-exporter télécharge un .json des questions perso.
+
+   6. Import — #champ-import lit un fichier avec FileReader, valide sa
+      structure et fusionne les nouvelles questions sans écraser celles
+      déjà présentes.
 
    CONTRAT
    -------
    - Émet 'banque:modifiee' à chaque changement
    - Écoute 'app:pret' et 'ecran:change' (nom === 'editeur')
-   - Le format des questions est le contrat commun avec N'famory : une
-     question mal formée casse la partie de tout le monde.
+   - Le format des questions est le contrat commun avec N'famory.
    ============================================================= */
 
 
-
 // =============================================================
-// 1. ELEMENTS DU DOM
+// 1. ÉLÉMENTS DU DOM
 // =============================================================
 
 const formulaireQuestion = $('#form-question');
@@ -73,16 +67,24 @@ const champImport = $('#champ-import');
 const listeQuestions = $('#liste-questions');
 const editeurVide = $('#editeur-vide');
 
+
 // =============================================================
-// 2. LECTURE DES QUESTIONS PERSONNELLES
+// 2. STOCKAGE DES QUESTIONS PERSONNELLES
 // =============================================================
 
+const lireQuestionsPerso = () => {
 
-const lireQuestionsPerso = () =>
-  App.local.lire(
+  const questions = App.local.lire(
     App.CLES.perso,
     []
   );
+
+  return Array.isArray(questions)
+    ? questions
+    : [];
+
+};
+
 
 const sauvegarderQuestionsPerso = (questions) =>
   App.local.ecrire(
@@ -90,8 +92,9 @@ const sauvegarderQuestionsPerso = (questions) =>
     questions
   );
 
+
 // =============================================================
-// 3. PROTECTION DU TEXTE AFFICHE
+// 3. PROTECTION DU TEXTE AFFICHÉ
 // =============================================================
 
 const echapperHTML = (texte = '') => {
@@ -105,6 +108,7 @@ const echapperHTML = (texte = '') => {
 
 };
 
+
 // =============================================================
 // 4. GESTION DES ERREURS DU FORMULAIRE
 // =============================================================
@@ -116,6 +120,7 @@ const afficherErreur = (message) => {
 
 };
 
+
 const cacherErreur = () => {
 
   messageErreur.textContent = '';
@@ -123,10 +128,10 @@ const cacherErreur = () => {
 
 };
 
-// =============================================================
-// 5. RECUPERATION DES DONNEES DU FORMULAIRE
-// =============================================================
 
+// =============================================================
+// 5. RÉCUPÉRATION ET VALIDATION DU FORMULAIRE
+// =============================================================
 
 const recupererDonneesFormulaire = () => {
 
@@ -141,6 +146,7 @@ const recupererDonneesFormulaire = () => {
 
   const bonneChoisie =
     Number(champBonneReponse.value);
+
 
   const propositions = [
 
@@ -166,12 +172,14 @@ const recupererDonneesFormulaire = () => {
 
   ];
 
+
   const propositionsRemplies =
     propositions.filter(
       ({ texte }) => texte !== ''
     );
 
 
+  // Intitulé obligatoire.
   if (intitule === '') {
 
     afficherErreur(
@@ -182,6 +190,7 @@ const recupererDonneesFormulaire = () => {
   }
 
 
+  // Catégorie obligatoire.
   if (categorie === '') {
 
     afficherErreur(
@@ -192,6 +201,7 @@ const recupererDonneesFormulaire = () => {
   }
 
 
+  // Au moins deux propositions sont nécessaires.
   if (propositionsRemplies.length < 2) {
 
     afficherErreur(
@@ -202,6 +212,8 @@ const recupererDonneesFormulaire = () => {
   }
 
 
+  // Vérifie que la réponse choisie correspond réellement
+  // à une proposition remplie.
   const bonneReponseExiste =
     propositionsRemplies.some(
       ({ index }) =>
@@ -232,30 +244,10 @@ const recupererDonneesFormulaire = () => {
 
 };
 
+
 // =============================================================
-// 6. CREATION D'UNE QUESTION QUIZZY
+// 6. CRÉATION D'UNE QUESTION QUIZZY
 // =============================================================
-
-// {
-//   id,
-//   categorie,
-//   difficulte,
-//   intitule,
-//   options,
-//   bonne,
-//   explication
-// }
-
-// Nous devons donc effectuer cette transformation :
-
-// données du formulaire
-//         ↓
-// construction
-//         ↓
-// objet Quizzy
-//         ↓
-// localStorage
-
 
 const creerQuestion = ({
   intitule,
@@ -265,15 +257,24 @@ const creerQuestion = ({
   propositionsRemplies
 }) => {
 
-  const options = propositionsRemplies.map(
-    ({ texte }) => texte
-  );
+  const options =
+    propositionsRemplies.map(
+      ({ texte }) => texte
+    );
 
-  const bonne = propositionsRemplies.findIndex(
-    ({ index }) => index === bonneChoisie
-  );
 
-  const id = `perso-${Date.now()}`;
+  // Recalcule l'index après suppression éventuelle
+  // d'une proposition vide.
+  const bonne =
+    propositionsRemplies.findIndex(
+      ({ index }) =>
+        index === bonneChoisie
+    );
+
+
+  const id =
+    `perso-${Date.now()}`;
+
 
   return {
     id,
@@ -287,16 +288,131 @@ const creerQuestion = ({
 
 };
 
+
 // =============================================================
-// 7. AFFICHAGE DES QUESTIONS PERSONNELLES
+// 7. VALIDATION D'UNE QUESTION IMPORTÉE
 // =============================================================
 
+const estQuestionValide = (question) => {
 
+  // Une question doit être un objet.
+  if (
+    !question ||
+    typeof question !== 'object' ||
+    Array.isArray(question)
+  ) {
+    return false;
+  }
+
+
+  const {
+    id,
+    categorie,
+    difficulte,
+    intitule,
+    options,
+    bonne,
+    explication
+  } = question;
+
+
+  // Identifiant.
+  if (
+    typeof id !== 'string' ||
+    id.trim() === ''
+  ) {
+    return false;
+  }
+
+
+  // Catégorie.
+  if (
+    typeof categorie !== 'string' ||
+    categorie.trim() === ''
+  ) {
+    return false;
+  }
+
+
+  // Difficulté autorisée.
+  if (
+    ![
+      'facile',
+      'moyen',
+      'difficile'
+    ].includes(difficulte)
+  ) {
+    return false;
+  }
+
+
+  // Intitulé.
+  if (
+    typeof intitule !== 'string' ||
+    intitule.trim() === ''
+  ) {
+    return false;
+  }
+
+
+  // Il faut au moins deux propositions.
+  if (
+    !Array.isArray(options) ||
+    options.length < 2
+  ) {
+    return false;
+  }
+
+
+  // Toutes les propositions doivent être
+  // des chaînes non vides.
+  const optionsValides =
+    options.every(
+      (option) =>
+        typeof option === 'string' &&
+        option.trim() !== ''
+    );
+
+
+  if (!optionsValides) {
+    return false;
+  }
+
+
+  // "bonne" doit être un index entier existant.
+  if (
+    !Number.isInteger(bonne) ||
+    bonne < 0 ||
+    bonne >= options.length
+  ) {
+    return false;
+  }
+
+
+  // Le contrat commun prévoit toujours explication.
+  if (
+    typeof explication !== 'string'
+  ) {
+    return false;
+  }
+
+
+  return true;
+
+};
+
+
+// =============================================================
+// 8. AFFICHAGE DES QUESTIONS PERSONNELLES
+// =============================================================
 
 const afficherQuestionsPerso = () => {
 
-  const questions = lireQuestionsPerso();
+  const questions =
+    lireQuestionsPerso();
 
+
+  // Cas où aucune question n'existe.
   if (questions.length === 0) {
 
     listeQuestions.innerHTML = '';
@@ -305,217 +421,491 @@ const afficherQuestionsPerso = () => {
     return;
   }
 
+
   editeurVide.hidden = true;
 
-  listeQuestions.innerHTML = questions
-    .map(({ id, intitule, categorie, difficulte }) => {
 
-      return `
-        <li>
+  listeQuestions.innerHTML =
+    questions
+      .map(
+        ({
+          id,
+          intitule,
+          categorie,
+          difficulte
+        }) => {
 
-          <div>
-            <strong>
-              ${echapperHTML(intitule)}
-            </strong>
+          return `
+            <li>
 
-            <small>
-              ${echapperHTML(categorie)}
-              —
-              ${echapperHTML(difficulte)}
-            </small>
-          </div>
+              <div>
 
-          <button
-            type="button"
-            class="supprimer"
-            data-id="${echapperHTML(id)}"
-          >
-            Supprimer
-          </button>
+                <strong>
+                  ${echapperHTML(intitule)}
+                </strong>
 
-        </li>
-      `;
+                <small>
+                  ${echapperHTML(categorie)}
+                  —
+                  ${echapperHTML(difficulte)}
+                </small>
 
-    })
-    .join('');
+              </div>
+
+              <button
+                type="button"
+                class="supprimer"
+                data-id="${echapperHTML(id)}"
+              >
+                Supprimer
+              </button>
+
+            </li>
+          `;
+
+        }
+      )
+      .join('');
 
 };
 
-App.sur('ecran:change', ({ nom }) => {
-  if (nom === 'editeur') afficherQuestionsPerso();
-});
 
-App.sur('app:pret', () => {
-  // TODO 1, 2, 4, 5 et 6
+// =============================================================
+// 9. ACTUALISATION LORS DU CHANGEMENT D'ÉCRAN
+// =============================================================
 
-  // Nous allons donc désactiver uniquement la validation automatique du navigateur depuis ton JavaScript, sans modifier index.html.
+App.sur(
+  'ecran:change',
+  ({ nom }) => {
 
-  formulaireQuestion.noValidate = true;
+    if (nom === 'editeur') {
+      afficherQuestionsPerso();
+    }
 
-    // Solution partielle
+  }
+);
 
+
+// =============================================================
+// 10. INITIALISATION DU MODULE
+// =============================================================
+
+App.sur(
+  'app:pret',
+  () => {
+
+    // Nous utilisons notre propre validation JavaScript.
+    formulaireQuestion.noValidate = true;
+
+    // Prépare immédiatement la liste depuis localStorage.
     afficherQuestionsPerso();
 
-  // ---------------------------------
-  // AJOUT D'UNE QUESTION
-  // 
 
-   formulaireQuestion.addEventListener(
-    'submit',
-    (evenement) => {
+    // =========================================================
+    // 10.1 AJOUT D'UNE QUESTION
+    // =========================================================
 
-      evenement.preventDefault();
+    formulaireQuestion.addEventListener(
+      'submit',
+      (evenement) => {
 
-      // le console.log() temporaire.
-
-
-      // const donnees =
-      //   recupererDonneesFormulaire();
-
-      // if (!donnees) {
-      //   return;
-      // }
-
-      // console.log(
-      //   'Données valides :',
-      //   donnees
-      // );
-
-      
-      const donnees =
-        recupererDonneesFormulaire();
+        evenement.preventDefault();
 
 
-      if (!donnees) {
-        return;
-      }
+        const donnees =
+          recupererDonneesFormulaire();
 
 
-      const nouvelleQuestion =
-        creerQuestion(donnees);
+        if (!donnees) {
+          return;
+        }
 
 
-      const questionsExistantes =
-        lireQuestionsPerso();
+        const nouvelleQuestion =
+          creerQuestion(donnees);
 
 
-      const questionsMisesAJour = [
-        ...questionsExistantes,
-        nouvelleQuestion
-      ];
+        const questionsExistantes =
+          lireQuestionsPerso();
 
 
-      const sauvegardeReussie =
-        sauvegarderQuestionsPerso(
-          questionsMisesAJour
+        const questionsMisesAJour = [
+          ...questionsExistantes,
+          nouvelleQuestion
+        ];
+
+
+        const sauvegardeReussie =
+          sauvegarderQuestionsPerso(
+            questionsMisesAJour
+          );
+
+
+        if (!sauvegardeReussie) {
+
+          App.notifier(
+            'Impossible d’enregistrer la question.',
+            'erreur'
+          );
+
+          return;
+        }
+
+
+        afficherQuestionsPerso();
+
+        formulaireQuestion.reset();
+
+        cacherErreur();
+
+
+        App.emettre(
+          'banque:modifiee'
         );
 
-
-      if (!sauvegardeReussie) {
 
         App.notifier(
-          'Impossible d’enregistrer la question.',
-          'erreur'
+          'Question enregistrée avec succès.'
         );
 
-        return;
       }
+    );
 
 
-      afficherQuestionsPerso();
+    // =========================================================
+    // 10.2 SUPPRESSION D'UNE QUESTION
+    // =========================================================
 
-      formulaireQuestion.reset();
+    listeQuestions.addEventListener(
+      'click',
+      (evenement) => {
 
-      cacherErreur();
-
-      App.emettre(
-        'banque:modifiee'
-      );
-
-      App.notifier(
-        'Question enregistrée avec succès.'
-      );
-
-    }
-  );
-
-  // ---------------------------------
-  // SUPPRESSION D'UNE QUESTION
-  // --
+        const boutonSupprimer =
+          evenement.target.closest(
+            '.supprimer'
+          );
 
 
-  listeQuestions.addEventListener(
-    'click',
-    (evenement) => {
-
-      const boutonSupprimer =
-        evenement.target.closest('.supprimer');
-
-
-      if (
-        !boutonSupprimer ||
-        !listeQuestions.contains(boutonSupprimer)
-      ) {
-        return;
-      }
+        // Le clic n'était pas effectué
+        // sur un bouton Supprimer.
+        if (
+          !boutonSupprimer ||
+          !listeQuestions.contains(
+            boutonSupprimer
+          )
+        ) {
+          return;
+        }
 
 
-      const { id } =
-        boutonSupprimer.dataset;
+        const { id } =
+          boutonSupprimer.dataset;
 
 
-      const questions =
-        lireQuestionsPerso();
+        const questions =
+          lireQuestionsPerso();
 
 
-      const questionsRestantes =
-        questions.filter(
-          ({ id: questionId }) =>
-            questionId !== id
+        const questionsRestantes =
+          questions.filter(
+            ({ id: questionId }) =>
+              questionId !== id
+          );
+
+
+        // Aucun identifiant correspondant trouvé.
+        if (
+          questionsRestantes.length ===
+          questions.length
+        ) {
+          return;
+        }
+
+
+        const sauvegardeReussie =
+          sauvegarderQuestionsPerso(
+            questionsRestantes
+          );
+
+
+        if (!sauvegardeReussie) {
+
+          App.notifier(
+            'Impossible de supprimer la question.',
+            'erreur'
+          );
+
+          return;
+        }
+
+
+        afficherQuestionsPerso();
+
+
+        App.emettre(
+          'banque:modifiee'
         );
 
-
-      if (
-        questionsRestantes.length ===
-        questions.length
-      ) {
-        return;
-      }
-
-
-      const sauvegardeReussie =
-        sauvegarderQuestionsPerso(
-          questionsRestantes
-        );
-
-
-      if (!sauvegardeReussie) {
 
         App.notifier(
-          'Impossible de supprimer la question.',
-          'erreur'
+          'Question supprimée.'
         );
 
-        return;
       }
+    );
 
 
-      afficherQuestionsPerso();
+    // =========================================================
+    // 10.3 EXPORT DES QUESTIONS EN JSON
+    // =========================================================
+
+    boutonExporter.addEventListener(
+      'click',
+      () => {
+
+        const questions =
+          lireQuestionsPerso();
 
 
-      App.emettre(
-        'banque:modifiee'
-      );
+        const contenuJSON =
+          JSON.stringify(
+            questions,
+            null,
+            2
+          );
 
 
-      App.notifier(
-        'Question supprimée.'
-      );
+        const blob =
+          new Blob(
+            [contenuJSON],
+            {
+              type: 'application/json'
+            }
+          );
 
-    }
-  );
+
+        const lien =
+          document.createElement('a');
 
 
+        lien.href =
+          URL.createObjectURL(blob);
 
 
-});
+        lien.download =
+          `quizzy-questions-${Date.now()}.json`;
+
+
+        lien.click();
+
+
+        URL.revokeObjectURL(
+          lien.href
+        );
+
+
+        App.notifier(
+          'Questions exportées en JSON.'
+        );
+
+      }
+    );
+
+
+    // =========================================================
+    // 10.4 IMPORT DES QUESTIONS EN JSON
+    // =========================================================
+
+    champImport.addEventListener(
+      'change',
+      () => {
+
+        const [fichier] =
+          champImport.files;
+
+
+        // L'utilisateur a annulé le choix du fichier.
+        if (!fichier) {
+          return;
+        }
+
+
+        const lecteur =
+          new FileReader();
+
+
+        lecteur.onload = () => {
+
+          try {
+
+            const donneesImportees =
+              JSON.parse(
+                lecteur.result
+              );
+
+
+            // Le fichier doit contenir un tableau.
+            if (
+              !Array.isArray(
+                donneesImportees
+              )
+            ) {
+
+              App.notifier(
+                'Le fichier doit contenir un tableau de questions.',
+                'erreur'
+              );
+
+              return;
+            }
+
+
+            // Toutes les questions doivent respecter
+            // le contrat commun Quizzy.
+            const toutesValides =
+              donneesImportees.every(
+                estQuestionValide
+              );
+
+
+            if (!toutesValides) {
+
+              App.notifier(
+                'Le fichier contient une ou plusieurs questions invalides.',
+                'erreur'
+              );
+
+              return;
+            }
+
+
+            const questionsExistantes =
+              lireQuestionsPerso();
+
+
+            // Ensemble des identifiants déjà connus.
+            const idsConnus =
+              new Set(
+                questionsExistantes.map(
+                  ({ id }) => id
+                )
+              );
+
+
+            // Ignore :
+            // - les questions déjà présentes
+            // - les doublons internes au fichier importé
+            const questionsNouvelles =
+              donneesImportees.filter(
+                ({ id }) => {
+
+                  if (
+                    idsConnus.has(id)
+                  ) {
+                    return false;
+                  }
+
+
+                  idsConnus.add(id);
+
+                  return true;
+
+                }
+              );
+
+
+            // Rien de réellement nouveau.
+            if (
+              questionsNouvelles.length === 0
+            ) {
+
+              App.notifier(
+                'Aucune nouvelle question à importer.'
+              );
+
+              return;
+            }
+
+
+            // Fusion sans écraser les questions existantes.
+            const questionsFusionnees = [
+              ...questionsExistantes,
+              ...questionsNouvelles
+            ];
+
+
+            const sauvegardeReussie =
+              sauvegarderQuestionsPerso(
+                questionsFusionnees
+              );
+
+
+            if (!sauvegardeReussie) {
+
+              App.notifier(
+                'Impossible d’enregistrer les questions importées.',
+                'erreur'
+              );
+
+              return;
+            }
+
+
+            afficherQuestionsPerso();
+
+
+            App.emettre(
+              'banque:modifiee'
+            );
+
+
+            const nombreImporte =
+              questionsNouvelles.length;
+
+
+            App.notifier(
+              nombreImporte === 1
+                ? '1 question importée.'
+                : `${nombreImporte} questions importées.`
+            );
+
+          } catch (erreur) {
+
+            App.notifier(
+              'Le fichier JSON est invalide.',
+              'erreur'
+            );
+
+          } finally {
+
+            // Permet de sélectionner de nouveau
+            // exactement le même fichier.
+            champImport.value = '';
+
+          }
+
+        };
+
+
+        lecteur.onerror = () => {
+
+          App.notifier(
+            'Impossible de lire le fichier sélectionné.',
+            'erreur'
+          );
+
+
+          champImport.value = '';
+
+        };
+
+
+        lecteur.readAsText(
+          fichier
+        );
+
+      }
+    );
+
+  }
+);
