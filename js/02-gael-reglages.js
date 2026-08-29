@@ -34,22 +34,244 @@
    - Émet 'reglages:modifies' avec { config } et 'donnees:effacees'
    ============================================================= */
 
-const appliquerReglages = () => {
-  // TODO 1 : const sauvegardes = App.local.lire(App.CLES.reglages, {});
-  // TODO 2 : fusionner dans App.config avec le spread
-  // TODO 3 : appliquer le thème sur document.body.dataset.theme
-};
+/* =============================================================
+   02-gael-reglages.js — Réglages utilisateur
+   Branche : feat/reglages
+   ============================================================= */
 
-const enregistrerReglages = () => {
-  // TODO 4 : App.local.ecrire(App.CLES.reglages, App.config)
-  //          puis App.emettre('reglages:modifies', { config: App.config })
-};
+document.addEventListener('DOMContentLoaded', () => {
 
-App.sur('app:chargement', appliquerReglages);
+  /* -----------------------------------------------------------
+     1. Charger les réglages sauvegardés
+     ----------------------------------------------------------- */
 
-App.sur('app:pret', () => {
-  // TODO 5 : pré-remplir les 4 contrôles avec les valeurs de App.config
-  // TODO 6 : brancher l'événement 'change' (ou 'input' pour les sliders)
-  //          de chaque contrôle -> mettre à jour App.config + enregistrerReglages()
-  // TODO 7 : brancher #btn-reinitialiser-reglages et #btn-tout-effacer
+  const reglagesSauvegardes = App.local.lire(App.CLES.reglages);
+
+  if (reglagesSauvegardes) {
+    App.config = {
+      ...App.config,
+      ...reglagesSauvegardes
+    };
+  }
+
+
+  /* -----------------------------------------------------------
+     2. Sélection des contrôles
+     ----------------------------------------------------------- */
+
+  const regTheme = $('#reg-theme');
+  const regNbQuestions = $('#reg-nb-questions');
+  const regDuree = $('#reg-duree');
+  const regMelange = $('#reg-melange');
+
+  const regNbQuestionsValeur = $('#reg-nb-questions-valeur');
+  const regDureeValeur = $('#reg-duree-valeur');
+
+  const btnReinitialiser = $('#btn-reinitialiser-reglages');
+  const btnToutEffacer = $('#btn-tout-effacer');
+
+
+  /* -----------------------------------------------------------
+     3. Appliquer le thème
+     ----------------------------------------------------------- */
+
+  const appliquerTheme = () => {
+    document.body.dataset.theme = App.config.theme;
+  };
+
+
+  /* -----------------------------------------------------------
+     4. Synchroniser les contrôles avec App.config
+     ----------------------------------------------------------- */
+
+  const synchroniserControles = () => {
+
+    // Thème
+    if (regTheme) {
+      regTheme.checked = App.config.theme === 'clair';
+    }
+
+    // Nombre de questions
+    if (regNbQuestions) {
+      regNbQuestions.value = App.config.nbQuestions;
+    }
+
+    if (regNbQuestionsValeur) {
+      regNbQuestionsValeur.textContent = App.config.nbQuestions;
+    }
+
+    // Durée
+    if (regDuree) {
+      regDuree.value = App.config.dureeQuestion;
+    }
+
+    if (regDureeValeur) {
+      regDureeValeur.textContent = `${App.config.dureeQuestion} s`;
+    }
+
+    // Mélanger les réponses
+    if (regMelange) {
+      regMelange.checked = App.config.melangerReponses;
+    }
+  };
+
+
+  /* -----------------------------------------------------------
+     5. Sauvegarder les réglages
+     ----------------------------------------------------------- */
+
+  const sauvegarderReglages = () => {
+
+    App.local.ecrire(
+      App.CLES.reglages,
+      App.config
+    );
+
+    App.emettre('reglages:modifies');
+
+    App.notifier('Réglage enregistré');
+  };
+
+
+  /* -----------------------------------------------------------
+     6. Changement du thème
+     ----------------------------------------------------------- */
+
+  if (regTheme) {
+
+    regTheme.addEventListener('change', () => {
+
+      App.config.theme = regTheme.checked
+        ? 'clair'
+        : 'sombre';
+
+      appliquerTheme();
+
+      sauvegarderReglages();
+    });
+  }
+
+
+  /* -----------------------------------------------------------
+     7. Nombre de questions
+     ----------------------------------------------------------- */
+
+  if (regNbQuestions) {
+
+    regNbQuestions.addEventListener('input', () => {
+
+      App.config.nbQuestions = Number(
+        regNbQuestions.value
+      );
+
+      if (regNbQuestionsValeur) {
+        regNbQuestionsValeur.textContent =
+          `${App.config.nbQuestions}`;
+      }
+
+      sauvegarderReglages();
+    });
+  }
+
+
+  /* -----------------------------------------------------------
+     8. Durée par question
+     ----------------------------------------------------------- */
+
+  if (regDuree) {
+
+    regDuree.addEventListener('input', () => {
+
+      App.config.dureeQuestion = Number(
+        regDuree.value
+      );
+
+      if (regDureeValeur) {
+        regDureeValeur.textContent =
+          `${App.config.dureeQuestion} s`;
+      }
+
+      sauvegarderReglages();
+    });
+  }
+
+
+  /* -----------------------------------------------------------
+     9. Mélanger les réponses
+     ----------------------------------------------------------- */
+
+  if (regMelange) {
+
+    regMelange.addEventListener('change', () => {
+
+      App.config.melangerReponses =
+        regMelange.checked;
+
+      sauvegarderReglages();
+    });
+  }
+
+
+  /* -----------------------------------------------------------
+     10. Réinitialiser les réglages
+     ----------------------------------------------------------- */
+
+  if (btnReinitialiser) {
+
+    btnReinitialiser.addEventListener('click', () => {
+
+      App.config = {
+        ...App.config,
+        nbQuestions: 10,
+        dureeQuestion: 20,
+        melangerReponses: true,
+        theme: 'sombre'
+      };
+
+      appliquerTheme();
+
+      synchroniserControles();
+
+      sauvegarderReglages();
+    });
+  }
+
+
+  /* -----------------------------------------------------------
+     11. Tout effacer
+     ----------------------------------------------------------- */
+
+  if (btnToutEffacer) {
+
+    btnToutEffacer.addEventListener('click', () => {
+
+      const confirmation = confirm(
+        'Voulez-vous vraiment effacer toutes vos données ?'
+      );
+
+      if (!confirmation) {
+        return;
+      }
+
+      App.local.vider();
+      App.session.vider();
+
+      App.emettre('donnees:effacees');
+
+      App.notifier(
+        'Toutes les données ont été effacées'
+      );
+    });
+  }
+
+
+  /* -----------------------------------------------------------
+     12. Initialisation
+     ----------------------------------------------------------- */
+
+  appliquerTheme();
+
+  synchroniserControles();
+
 });
+
