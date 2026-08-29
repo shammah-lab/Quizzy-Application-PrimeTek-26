@@ -32,15 +32,14 @@
 
 let minuteur = null;
 const chrono = $('#chrono')
-const chronojauge = $('.chrono__jauge')
 const chronoVal = $('#chrono-valeur')
-let tempsTotal = App.config.dureeQuestion
 const arreterChrono = () => {
   // TODO 1 : clearInterval(minuteur); minuteur = null;
-  clearInterval(minuteur)
+   clearInterval(minuteur);
+   minuteur = null;
 };
 
-const demarrerChrono = (tempsTotal) => {
+const demarrerChrono = () => {
   // TODO 2 : arreterChrono() d'abord
   // TODO 3 : let restant = App.config.dureeQuestion;
   // TODO 4 : afficher la valeur de départ, remettre --avancement à 1,
@@ -49,21 +48,25 @@ const demarrerChrono = (tempsTotal) => {
   //          chaque tick : restant -= 1, affichage, .est-urgent si <= 5,
   //          et si restant <= 0 -> arreterChrono() + App.emettre('temps:ecoule')
    arreterChrono()
+   const tempsTotal = App.config.dureeQuestion
    let restant = tempsTotal;
    chronoVal.textContent = restant
-   chronojauge.style.setProperty('--avancement', 1)
-   chronojauge.style.stroke = 'var(--menthe)'
+   chrono.style.setProperty('--avancement', 1)
+   chrono.classList.remove('est-urgent')
+
    minuteur = setInterval(() => {
       restant--;
       chronoVal.textContent = restant
-      chronojauge.style.setProperty('--avancement', restant / tempsTotal)
+      chrono.style.setProperty('--avancement', restant / tempsTotal)
       if(restant <= 0){
-         chronojauge.style.setProperty('--avancement', 0)
+         chronoVal.textContent = 0
+         chrono.style.setProperty('--avancement', 0)
          arreterChrono()
-         App.emettre('temps:ecoule');
+         App.emettre('temps:ecoule')
+         return;
       }
       else if (restant <= 5){
-         chronojauge.style.stroke = 'var(--rouge)'
+         chrono.classList.add('est-urgent')
       }
    }, 1000)
 

@@ -32,7 +32,7 @@
   --transition: 180ms ease;
 }
 
-/* Thème clair — activé par Resia via document.body.dataset.theme = 'clair' */
+/* Thème clair — activé par Gaël via document.body.dataset.theme = 'clair' */
 body[data-theme="clair"] {
   --fond:        #EEF4F8;
   --fond-carte:  #FFFFFF;
@@ -287,7 +287,7 @@ input[type="range"] { accent-color: var(--menthe); width: 140px; }
 }
 .liste-questions .supprimer { background: none; border: 0; color: var(--rouge); cursor: pointer; font: inherit; font-size: 0.85rem; }
 
-/* Mini graphe en barres (Williams) */
+/* Mini graphe en barres (Resia) */
 .graphe { display: flex; align-items: flex-end; gap: 6px; height: 120px; padding: 0.8rem; background: var(--fond-doux); border-radius: var(--rayon-s); }
 .graphe__barre { flex: 1; background: linear-gradient(180deg, var(--menthe), var(--sarcelle)); border-radius: 4px 4px 0 0; min-height: 3px; position: relative; }
 .graphe__barre::after { content: attr(data-valeur); position: absolute; top: -1.2rem; left: 50%; transform: translateX(-50%); font-size: 0.7rem; color: var(--texte-faible); }

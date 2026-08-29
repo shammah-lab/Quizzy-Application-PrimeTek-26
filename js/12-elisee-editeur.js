@@ -46,10 +46,299 @@
      question mal formée casse la partie de tout le monde.
    ============================================================= */
 
-const lireQuestionsPerso = () => App.local.lire(App.CLES.perso, []);
+
+
+// =============================================================
+// 1. ELEMENTS DU DOM
+// =============================================================
+
+const formulaireQuestion = $('#form-question');
+
+const champIntitule = $('#q-intitule');
+const champCategorie = $('#q-categorie');
+const champDifficulte = $('#q-difficulte');
+
+const champOption0 = $('#q-opt-0');
+const champOption1 = $('#q-opt-1');
+const champOption2 = $('#q-opt-2');
+const champOption3 = $('#q-opt-3');
+
+const champBonneReponse = $('#q-bonne');
+
+const messageErreur = $('#erreur-question');
+
+const boutonExporter = $('#btn-exporter');
+const champImport = $('#champ-import');
+
+const listeQuestions = $('#liste-questions');
+const editeurVide = $('#editeur-vide');
+
+// =============================================================
+// 2. LECTURE DES QUESTIONS PERSONNELLES
+// =============================================================
+
+
+const lireQuestionsPerso = () =>
+  App.local.lire(
+    App.CLES.perso,
+    []
+  );
+
+const sauvegarderQuestionsPerso = (questions) =>
+  App.local.ecrire(
+    App.CLES.perso,
+    questions
+  );
+
+// =============================================================
+// 3. PROTECTION DU TEXTE AFFICHE
+// =============================================================
+
+const echapperHTML = (texte = '') => {
+
+  return String(texte)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+
+};
+
+// =============================================================
+// 4. GESTION DES ERREURS DU FORMULAIRE
+// =============================================================
+
+const afficherErreur = (message) => {
+
+  messageErreur.textContent = message;
+  messageErreur.hidden = false;
+
+};
+
+const cacherErreur = () => {
+
+  messageErreur.textContent = '';
+  messageErreur.hidden = true;
+
+};
+
+// =============================================================
+// 5. RECUPERATION DES DONNEES DU FORMULAIRE
+// =============================================================
+
+
+const recupererDonneesFormulaire = () => {
+
+  const intitule =
+    champIntitule.value.trim();
+
+  const categorie =
+    champCategorie.value.trim();
+
+  const difficulte =
+    champDifficulte.value;
+
+  const bonneChoisie =
+    Number(champBonneReponse.value);
+
+  const propositions = [
+
+    {
+      index: 0,
+      texte: champOption0.value.trim()
+    },
+
+    {
+      index: 1,
+      texte: champOption1.value.trim()
+    },
+
+    {
+      index: 2,
+      texte: champOption2.value.trim()
+    },
+
+    {
+      index: 3,
+      texte: champOption3.value.trim()
+    }
+
+  ];
+
+  const propositionsRemplies =
+    propositions.filter(
+      ({ texte }) => texte !== ''
+    );
+
+
+  if (intitule === '') {
+
+    afficherErreur(
+      'Veuillez saisir l’intitulé de la question.'
+    );
+
+    return null;
+  }
+
+
+  if (categorie === '') {
+
+    afficherErreur(
+      'Veuillez saisir une catégorie.'
+    );
+
+    return null;
+  }
+
+
+  if (propositionsRemplies.length < 2) {
+
+    afficherErreur(
+      'Veuillez saisir au moins deux propositions de réponse.'
+    );
+
+    return null;
+  }
+
+
+  const bonneReponseExiste =
+    propositionsRemplies.some(
+      ({ index }) =>
+        index === bonneChoisie
+    );
+
+
+  if (!bonneReponseExiste) {
+
+    afficherErreur(
+      'La bonne réponse choisie doit correspondre à une proposition remplie.'
+    );
+
+    return null;
+  }
+
+
+  cacherErreur();
+
+
+  return {
+    intitule,
+    categorie,
+    difficulte,
+    bonneChoisie,
+    propositionsRemplies
+  };
+
+};
+
+// =============================================================
+// 6. CREATION D'UNE QUESTION QUIZZY
+// =============================================================
+
+// {
+//   id,
+//   categorie,
+//   difficulte,
+//   intitule,
+//   options,
+//   bonne,
+//   explication
+// }
+
+// Nous devons donc effectuer cette transformation :
+
+// données du formulaire
+//         ↓
+// construction
+//         ↓
+// objet Quizzy
+//         ↓
+// localStorage
+
+
+const creerQuestion = ({
+  intitule,
+  categorie,
+  difficulte,
+  bonneChoisie,
+  propositionsRemplies
+}) => {
+
+  const options = propositionsRemplies.map(
+    ({ texte }) => texte
+  );
+
+  const bonne = propositionsRemplies.findIndex(
+    ({ index }) => index === bonneChoisie
+  );
+
+  const id = `perso-${Date.now()}`;
+
+  return {
+    id,
+    categorie,
+    difficulte,
+    intitule,
+    options,
+    bonne,
+    explication: ''
+  };
+
+};
+
+// =============================================================
+// 7. AFFICHAGE DES QUESTIONS PERSONNELLES
+// =============================================================
+
+
 
 const afficherQuestionsPerso = () => {
-  // TODO 3
+
+  const questions = lireQuestionsPerso();
+
+  if (questions.length === 0) {
+
+    listeQuestions.innerHTML = '';
+    editeurVide.hidden = false;
+
+    return;
+  }
+
+  editeurVide.hidden = true;
+
+  listeQuestions.innerHTML = questions
+    .map(({ id, intitule, categorie, difficulte }) => {
+
+      return `
+        <li>
+
+          <div>
+            <strong>
+              ${echapperHTML(intitule)}
+            </strong>
+
+            <small>
+              ${echapperHTML(categorie)}
+              —
+              ${echapperHTML(difficulte)}
+            </small>
+          </div>
+
+          <button
+            type="button"
+            class="supprimer"
+            data-id="${echapperHTML(id)}"
+          >
+            Supprimer
+          </button>
+
+        </li>
+      `;
+
+    })
+    .join('');
+
 };
 
 App.sur('ecran:change', ({ nom }) => {
@@ -58,4 +347,175 @@ App.sur('ecran:change', ({ nom }) => {
 
 App.sur('app:pret', () => {
   // TODO 1, 2, 4, 5 et 6
+
+  // Nous allons donc désactiver uniquement la validation automatique du navigateur depuis ton JavaScript, sans modifier index.html.
+
+  formulaireQuestion.noValidate = true;
+
+    // Solution partielle
+
+    afficherQuestionsPerso();
+
+  // ---------------------------------
+  // AJOUT D'UNE QUESTION
+  // 
+
+   formulaireQuestion.addEventListener(
+    'submit',
+    (evenement) => {
+
+      evenement.preventDefault();
+
+      // le console.log() temporaire.
+
+
+      // const donnees =
+      //   recupererDonneesFormulaire();
+
+      // if (!donnees) {
+      //   return;
+      // }
+
+      // console.log(
+      //   'Données valides :',
+      //   donnees
+      // );
+
+      
+      const donnees =
+        recupererDonneesFormulaire();
+
+
+      if (!donnees) {
+        return;
+      }
+
+
+      const nouvelleQuestion =
+        creerQuestion(donnees);
+
+
+      const questionsExistantes =
+        lireQuestionsPerso();
+
+
+      const questionsMisesAJour = [
+        ...questionsExistantes,
+        nouvelleQuestion
+      ];
+
+
+      const sauvegardeReussie =
+        sauvegarderQuestionsPerso(
+          questionsMisesAJour
+        );
+
+
+      if (!sauvegardeReussie) {
+
+        App.notifier(
+          'Impossible d’enregistrer la question.',
+          'erreur'
+        );
+
+        return;
+      }
+
+
+      afficherQuestionsPerso();
+
+      formulaireQuestion.reset();
+
+      cacherErreur();
+
+      App.emettre(
+        'banque:modifiee'
+      );
+
+      App.notifier(
+        'Question enregistrée avec succès.'
+      );
+
+    }
+  );
+
+  // ---------------------------------
+  // SUPPRESSION D'UNE QUESTION
+  // --
+
+
+  listeQuestions.addEventListener(
+    'click',
+    (evenement) => {
+
+      const boutonSupprimer =
+        evenement.target.closest('.supprimer');
+
+
+      if (
+        !boutonSupprimer ||
+        !listeQuestions.contains(boutonSupprimer)
+      ) {
+        return;
+      }
+
+
+      const { id } =
+        boutonSupprimer.dataset;
+
+
+      const questions =
+        lireQuestionsPerso();
+
+
+      const questionsRestantes =
+        questions.filter(
+          ({ id: questionId }) =>
+            questionId !== id
+        );
+
+
+      if (
+        questionsRestantes.length ===
+        questions.length
+      ) {
+        return;
+      }
+
+
+      const sauvegardeReussie =
+        sauvegarderQuestionsPerso(
+          questionsRestantes
+        );
+
+
+      if (!sauvegardeReussie) {
+
+        App.notifier(
+          'Impossible de supprimer la question.',
+          'erreur'
+        );
+
+        return;
+      }
+
+
+      afficherQuestionsPerso();
+
+
+      App.emettre(
+        'banque:modifiee'
+      );
+
+
+      App.notifier(
+        'Question supprimée.'
+      );
+
+    }
+  );
+
+
+
+
 });
