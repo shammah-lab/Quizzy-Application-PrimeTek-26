@@ -18,7 +18,7 @@ const $$ = (selecteur, contexte = document) => [...contexte.querySelectorAll(sel
 
 const App = {
 
-  /* ---- Réglages par défaut (Resia peut les écraser) ---- */
+  /* ---- Réglages par défaut (Gaël peut les écraser) ---- */
   config: {
     nbQuestions: 10,
     dureeQuestion: 20,

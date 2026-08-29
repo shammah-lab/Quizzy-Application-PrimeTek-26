@@ -31,9 +31,12 @@
    ============================================================= */
 
 let minuteur = null;
-
+const chrono = $('#chrono')
+const chronoVal = $('#chrono-valeur')
 const arreterChrono = () => {
   // TODO 1 : clearInterval(minuteur); minuteur = null;
+   clearInterval(minuteur);
+   minuteur = null;
 };
 
 const demarrerChrono = () => {
@@ -44,6 +47,29 @@ const demarrerChrono = () => {
   // TODO 5 : minuteur = setInterval(() => { ... }, 1000);
   //          chaque tick : restant -= 1, affichage, .est-urgent si <= 5,
   //          et si restant <= 0 -> arreterChrono() + App.emettre('temps:ecoule')
+   arreterChrono()
+   const tempsTotal = App.config.dureeQuestion
+   let restant = tempsTotal;
+   chronoVal.textContent = restant
+   chrono.style.setProperty('--avancement', 1)
+   chrono.classList.remove('est-urgent')
+
+   minuteur = setInterval(() => {
+      restant--;
+      chronoVal.textContent = restant
+      chrono.style.setProperty('--avancement', restant / tempsTotal)
+      if(restant <= 0){
+         chronoVal.textContent = 0
+         chrono.style.setProperty('--avancement', 0)
+         arreterChrono()
+         App.emettre('temps:ecoule')
+         return;
+      }
+      else if (restant <= 5){
+         chrono.classList.add('est-urgent')
+      }
+   }, 1000)
+
 };
 
 App.sur('question:affichee', demarrerChrono);
