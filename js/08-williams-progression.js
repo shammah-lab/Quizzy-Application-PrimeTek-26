@@ -39,15 +39,39 @@
 
 const majProgression = ({ index, total }) => {
   // TODO 1 : calculer et appliquer la largeur de #barre-progression
+  const pourcentage = ((index + 1) / total) * 100;
+  $('#barre-progression').style.width = `${pourcentage}%`;
   // TODO 2 : adapter le libellé de #btn-suivant
+  if (index === total - 1) {
+    $('#btn-suivant').textContent = 'Voir mon résultat';
+  } 
+    else {
+    $('#btn-suivant').textContent = 'Question suivante';
+  }
 };
 
 const questionSuivante = () => {
   // TODO 3 : incrémenter App.etat.index
+  App.etat.index += 1;
   // TODO 4 : fin de partie ou question suivante (voir ci-dessus)
+  if (App.etat.index >= App.etat.questions.length) {
+    App.emettre('partie:terminee', {
+      joueur: App.etat.joueur,
+      score: App.etat.score,
+      total: App.etat.questions.length,
+      serieMax: App.etat.serieMax,
+      reponses: App.etat.reponses,
+      categorie: $('#champ-categorie').value,
+      duree: Math.round((Date.now() - App.etat.debutPartie) / 1000),
+      date: Date.now()
+    });
+  } else {
+    App.emettre('question:suivante');
+  }
 };
 
 App.sur('question:affichee', majProgression);
 App.sur('app:pret', () => {
   // TODO 5 : brancher le clic de #btn-suivant sur questionSuivante
+  $('#btn-suivant').addEventListener('click', questionSuivante);
 });
