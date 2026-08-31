@@ -93,4 +93,12 @@ App.sur('ecran:change', ({ nom }) => {
 App.sur('donnees:effacees', afficherClassement);
 App.sur('app:pret', () => {
   // TODO 5 : brancher #btn-vider-classement
+  const bouton = $('#btn-vider-classement');
+
+  bouton.addEventListener('click', () => {
+    if (confirm('Voulez-vous vraiment vider le classement ?')) {
+      App.local.ecrire(App.CLES.classement, []);
+      afficherClassement();
+    }
+  })
 });
