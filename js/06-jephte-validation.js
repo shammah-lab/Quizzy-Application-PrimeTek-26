@@ -74,7 +74,10 @@ const validerReponse = (donnees = {}) => {
   // 2. Feedback utilisateur
   const retour = $('#quiz-retour');
   retour.className = `retour ${correcte ? 'est-juste' : 'est-fausse'}`;
-  retour.innerHTML = `<strong>${correcte ? 'Bonne réponse !' : 'Dommage !'}</strong> ${question.explication}`;
+  retour.innerHTML = `<strong>${correcte ? 'Bonne réponse !' : 'Dommage !'}</strong> `;
+
+  const explication = document.createTextNode(question.explication);
+  retour.appendChild(explication);
   retour.hidden = false;
 
   // 3. Mise à jour de App.etat (Score & Séries)
