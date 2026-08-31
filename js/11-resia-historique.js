@@ -145,7 +145,7 @@ App.sur('app:pret', () => {
   if (btnVider) {
     btnVider.addEventListener('click', () => {
       if (confirm('Voulez-vous vraiment effacer tout votre historique ?')) {
-        App.local.effacer(App.CLES.historique);
+        App.local.ecrire(App.CLES.historique,[]);
         afficherHistorique();
       }
     });
